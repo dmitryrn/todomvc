@@ -9,7 +9,7 @@ module Main exposing (..)
 import Browser
 import Html exposing (Html, button, div, input, text)
 import Html.Attributes exposing (class, value)
-import Html.Events exposing (..)
+import Html.Events as Events
 import Json.Decode as Json
 import Monocle.Lens exposing (Lens)
 
@@ -19,7 +19,17 @@ import Monocle.Lens exposing (Lens)
 
 
 main =
-    Browser.sandbox { init = init, update = update, view = view }
+    Browser.element
+        { init = init
+        , subscriptions = subscriptions
+        , update = update
+        , view = view
+        }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
 
 
 
@@ -43,12 +53,14 @@ type Id
     = Id Int
 
 
-init : Model
-init =
-    { todos = []
-    , inputValue = ""
-    , internalId = Id 0
-    }
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( { todos = []
+      , inputValue = ""
+      , internalId = Id 0
+      }
+    , Cmd.none
+    )
 
 
 
@@ -58,6 +70,7 @@ init =
 type Msg
     = InputChange String
     | KeyPress Int
+    | NoOp
 
 
 inputValueOfModel : Lens Model String
@@ -99,9 +112,9 @@ createTodo text id =
     }
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case Debug.log "msg" msg of
+    ( case Debug.log "msg" msg of
         InputChange value ->
             inputValueOfModel.set value model
 
@@ -125,6 +138,11 @@ update msg model =
             else
                 model
 
+        NoOp ->
+            model
+    , Cmd.none
+    )
+
 
 
 -- VIEW
@@ -146,8 +164,8 @@ view model =
         [ div [] (todosList model.todos)
         , input
             [ value model.inputValue
-            , onInput InputChange
-            , on "keypress" (Json.map KeyPress keyCode)
+            , Events.onInput InputChange
+            , Events.on "keypress" (Json.map KeyPress Events.keyCode)
             ]
             []
         ]
