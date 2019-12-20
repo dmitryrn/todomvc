@@ -6,6 +6,8 @@ import Html.Attributes exposing (class, value)
 import Html.Events as Events
 import Json.Decode as Json
 import Monocle.Lens exposing (Lens)
+import Stuff
+import Todo exposing (Todo)
 
 
 
@@ -30,35 +32,21 @@ subscriptions model =
 -- MODEL
 
 
-type alias Todo =
-    { text : String
-    , id : Id
-    }
-
-
 type alias Model =
     { todos : List Todo
     , inputValue : String
-    , internalId : Id
+    , idState : Stuff.Id
     }
-
-
-type Id
-    = Id Int
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { todos = []
       , inputValue = ""
-      , internalId = Id 0
+      , idState = Stuff.createId 0
       }
     , Cmd.none
     )
-
-
-
--- UPDATE
 
 
 type Msg
@@ -67,14 +55,18 @@ type Msg
     | NoOp
 
 
+
+-- LENSES
+
+
 inputValueOfModel : Lens Model String
 inputValueOfModel =
     Lens .inputValue (\b a -> { a | inputValue = b })
 
 
-internalIdOfModel : Lens Model Id
-internalIdOfModel =
-    Lens .internalId (\b a -> { a | internalId = b })
+stateIdOfModel : Lens Model Stuff.Id
+stateIdOfModel =
+    Lens .idState (\b a -> { a | idState = b })
 
 
 todosOfModel : Lens Model (List Todo)
@@ -82,28 +74,8 @@ todosOfModel =
     Lens .todos (\b a -> { a | todos = b })
 
 
-flatId : Id -> Int
-flatId id =
-    case id of
-        Id n ->
-            n
 
-
-mapId : (Int -> Int) -> Id -> Id
-mapId f id =
-    Id << f << flatId <| id
-
-
-nextInternalid : Id -> Id
-nextInternalid id =
-    mapId (\x -> x + 1) id
-
-
-createTodo : String -> Id -> Todo
-createTodo text id =
-    { text = text
-    , id = id
-    }
+-- UPDATE
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -116,10 +88,10 @@ update msg model =
             if keyCode == 13 && not (String.isEmpty (inputValueOfModel.get model)) then
                 let
                     newTodoId =
-                        nextInternalid (internalIdOfModel.get model)
+                        Stuff.nextId (stateIdOfModel.get model)
 
                     newTodo =
-                        createTodo (inputValueOfModel.get model) newTodoId
+                        Todo.createTodo (inputValueOfModel.get model) newTodoId
 
                     nextTodos =
                         model.todos ++ [ newTodo ]
@@ -127,7 +99,7 @@ update msg model =
                 model
                     |> todosOfModel.set nextTodos
                     |> inputValueOfModel.set ""
-                    |> internalIdOfModel.set newTodoId
+                    |> stateIdOfModel.set newTodoId
 
             else
                 model
@@ -142,22 +114,17 @@ update msg model =
 -- VIEW
 
 
-singleTodo : Todo -> Html Msg
-singleTodo todo =
-    div [ class "todo-item" ] [ text <| String.concat [ todo.text, " ", String.fromInt <| flatId todo.id ] ]
-
-
-todosList : List Todo -> List (Html Msg)
-todosList todos =
-    List.map singleTodo todos
+todo : Todo -> Html msg
+todo t =
+    div [] [ text t.text ]
 
 
 view : Model -> Html Msg
-view model =
+view m =
     div []
-        [ div [] (todosList model.todos)
-        , input
-            [ value model.inputValue
+        [ div [] (List.map todo m.todos)
+        , Html.input
+            [ value m.inputValue
             , Events.onInput InputChange
             , Events.on "keypress" (Json.map KeyPress Events.keyCode)
             ]
