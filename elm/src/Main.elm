@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser
+import Dict
 import Html exposing (Html, button, div, input, text)
 import Html.Attributes as Attrs
 import Html.Events as Events
@@ -32,10 +33,17 @@ subscriptions model =
 -- MODEL
 
 
+type Filter
+    = All
+    | Done
+    | Remaining
+
+
 type alias Model =
     { todos : List Todo
     , inputValue : String
     , idState : Stuff.Id
+    , filter : Filter
     }
 
 
@@ -44,6 +52,7 @@ init _ =
     ( { todos = []
       , inputValue = ""
       , idState = Stuff.createId 0
+      , filter = All
       }
     , Cmd.none
     )
@@ -55,6 +64,7 @@ type Msg
     | DeleteTodo Stuff.Id
     | ToggleTodo Stuff.Id Bool
     | ToggleAllTodos
+    | SetFilter Filter
     | NoOp
 
 
@@ -75,6 +85,11 @@ stateIdL =
 todosL : Lens Model (List Todo)
 todosL =
     Lens .todos (\b a -> { a | todos = b })
+
+
+filterL : Lens Model Filter
+filterL =
+    Lens .filter (\b a -> { a | filter = b })
 
 
 
@@ -151,6 +166,10 @@ update msg model =
             model
                 |> todosL.set nextTodos
 
+        SetFilter filter ->
+            model
+                |> filterL.set filter
+
         NoOp ->
             model
     , Cmd.none
@@ -178,17 +197,63 @@ todoElement t =
         ]
 
 
+filterElement : Filter -> Html Msg
+filterElement current =
+    let
+        onClick filter =
+            Events.onClick (SetFilter filter)
+
+        map ( str, t ) =
+            if t == current then
+                button
+                    [ Attrs.style "border" "1px solid"
+                    , onClick t
+                    ]
+                    [ text str ]
+
+            else
+                button [ onClick t ] [ text str ]
+
+        values =
+            [ ( "all", All ), ( "done", Done ), ( "remaining", Remaining ) ]
+    in
+    div [] (List.map map values)
+
+
 view : Model -> Html Msg
 view m =
+    let
+        todosFilter : Filter -> List Todo -> List Todo
+        todosFilter filter todos =
+            let
+                predicate todo =
+                    case filter of
+                        All ->
+                            True
+
+                        Done ->
+                            todo.checked
+
+                        Remaining ->
+                            not todo.checked
+            in
+            List.filter predicate todos
+
+        --
+    in
     div []
-        [ div [] (List.map todoElement m.todos)
-        , input
-            [ Attrs.value m.inputValue
-            , Events.onInput InputChange
-            , Events.on "keypress" (Json.map KeyPress Events.keyCode)
+        [ div [] (List.map todoElement << todosFilter m.filter <| m.todos)
+        , div []
+            [ input
+                [ Attrs.value m.inputValue
+                , Events.onInput InputChange
+                , Events.on "keypress" (Json.map KeyPress Events.keyCode)
+                ]
+                []
+            , button
+                [ Events.onClick ToggleAllTodos ]
+                [ text "toggle checked" ]
             ]
-            []
-        , button
-            [ Events.onClick ToggleAllTodos ]
-            [ text "toggle checked" ]
+        , filterElement m.filter
+        , div [] [ text ((String.fromInt << List.length << List.filter (\t -> not t.checked) <| m.todos) ++ " remaining") ]
         ]
