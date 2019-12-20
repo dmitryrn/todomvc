@@ -1,4 +1,4 @@
-module Stuff exposing (Id, createId, nextId)
+module Stuff exposing (Id, createId, flatId, nextId)
 
 
 type Id
