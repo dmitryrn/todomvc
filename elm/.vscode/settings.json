@@ -1,5 +1,6 @@
 {
   "editor.renderWhitespace": "none",
   "editor.tabSize": 4,
-  "editor.codeLens": false
+  "editor.codeLens": false,
+  "editor.formatOnSave": true
 }
