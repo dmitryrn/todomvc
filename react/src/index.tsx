@@ -1,17 +1,7 @@
-import React, { useState, useEffect } from "react";
+import * as React from "react";
 import ReactDOM from "react-dom";
 
-import "./styles.css";
-
-const Todo = ({ todo: { id, text, checked }, onCheck, onDelete }) => {
-  return (
-    <div style={{ border: "1px solid black" }}>
-      <input type="checkbox" checked={checked} onChange={() => onCheck(id)} />
-      <div>{text}</div>
-      <button onClick={() => onDelete(id)}>x</button>
-    </div>
-  );
-};
+import { Todo } from './Todo'
 
 let _id = 0;
 const getId = () => {
@@ -26,9 +16,9 @@ const makeTodo = text => ({
 });
 
 function App() {
-  const [todo, setTodo] = useState("");
-  const [todos, setTodos] = useState([]);
-  const [visibilityFilter, setVisibilityFilter] = useState("all"); // active completed
+  const [todo, setTodo] = React.useState("");
+  const [todos, setTodos] = React.useState([]);
+  const [visibilityFilter, setVisibilityFilter] = React.useState("all"); // active completed
 
   const onKeyPress = e => {
     if (e.key === "Enter") {
@@ -90,6 +80,7 @@ function App() {
       <div>
         {["all", "active", "completed"].map(f => (
           <button
+            key={f}
             style={visibilityFilter === f ? { border: "1px solid" } : {}}
             onClick={() => setVisibilityFilter(f)}
           >
