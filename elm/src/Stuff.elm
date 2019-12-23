@@ -17,11 +17,6 @@ flatId id =
             n
 
 
-mapId : (Int -> Int) -> Id -> Id
-mapId f id =
-    Id << f << flatId <| id
-
-
 nextId : Id -> Id
-nextId id =
-    mapId (\x -> x + 1) id
+nextId (Id id) =
+    Id (id + 1)

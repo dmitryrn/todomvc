@@ -108,30 +108,27 @@ update msg model =
             in
             { model | todos = nextTodos }
 
-        ToggleTodo cid checked ->
+        ToggleTodo toggleId checked ->
             let
-                map t =
-                    if t.id == cid then
-                        Todo.createTodo t.text checked t.id
+                mapTodo todo =
+                    if todo.id == toggleId then
+                        Todo.createTodo todo.text checked todo.id
 
                     else
-                        t
+                        todo
 
                 nextTodos =
-                    List.map map model.todos
+                    List.map mapTodo model.todos
             in
             { model | todos = nextTodos }
 
         ToggleAllTodos ->
             let
-                allChecked =
-                    List.all (\t -> t.checked)
-
-                mapTodo chkd t =
-                    Todo.createTodo t.text chkd t.id
+                mapTodo checked todo =
+                    Todo.createTodo todo.text checked todo.id
 
                 nextTodos =
-                    if allChecked model.todos then
+                    if List.all .checked model.todos then
                         List.map (mapTodo False) model.todos
 
                     else
@@ -192,27 +189,23 @@ filterElement current =
     div [] (List.map map values)
 
 
-filterTodos : Filter -> List Todo -> List Todo
-filterTodos filter todos =
-    let
-        predicate todo =
-            case filter of
-                All ->
-                    True
+filterPredicate : Filter -> (Todo -> Bool)
+filterPredicate filter todo =
+    case filter of
+        All ->
+            True
 
-                Done ->
-                    todo.checked
+        Done ->
+            todo.checked
 
-                Remaining ->
-                    not todo.checked
-    in
-    List.filter predicate todos
+        Remaining ->
+            not todo.checked
 
 
 view : Model -> Html Msg
 view m =
     div []
-        [ div [] (List.map todoElement << filterTodos m.filter <| m.todos)
+        [ div [] (List.map todoElement << List.filter (filterPredicate m.filter) <| m.todos)
         , div []
             [ input
                 [ Attrs.value m.inputValue
