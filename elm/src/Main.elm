@@ -1,12 +1,10 @@
 module Main exposing (main)
 
 import Browser
-import Dict
 import Html exposing (Html, button, div, input, text)
 import Html.Attributes as Attrs
 import Html.Events as Events
 import Json.Decode as Json
-import Monocle.Lens exposing (Lens)
 import Stuff
 import Todo exposing (Todo)
 
@@ -15,6 +13,7 @@ import Todo exposing (Todo)
 -- MAIN
 
 
+main : Program () Model Msg
 main =
     Browser.element
         { init = init
@@ -69,55 +68,32 @@ type Msg
 
 
 
--- LENSES
-
-
-inputValueL : Lens Model String
-inputValueL =
-    Lens .inputValue (\b a -> { a | inputValue = b })
-
-
-stateIdL : Lens Model Stuff.Id
-stateIdL =
-    Lens .idState (\b a -> { a | idState = b })
-
-
-todosL : Lens Model (List Todo)
-todosL =
-    Lens .todos (\b a -> { a | todos = b })
-
-
-filterL : Lens Model Filter
-filterL =
-    Lens .filter (\b a -> { a | filter = b })
-
-
-
 -- UPDATE
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( case Debug.log "msg" msg of
+    ( case msg of
         InputChange value ->
-            inputValueL.set value model
+            { model | inputValue = value }
 
         KeyPress keyCode ->
-            if keyCode == 13 && not (String.isEmpty (inputValueL.get model)) then
+            if keyCode == 13 && not (String.isEmpty model.inputValue) then
                 let
                     newTodoId =
-                        Stuff.nextId (stateIdL.get model)
+                        Stuff.nextId model.idState
 
                     newTodo =
-                        Todo.createTodo (inputValueL.get model) False newTodoId
+                        Todo.createTodo model.inputValue False newTodoId
 
                     nextTodos =
                         model.todos ++ [ newTodo ]
                 in
-                model
-                    |> todosL.set nextTodos
-                    |> inputValueL.set ""
-                    |> stateIdL.set newTodoId
+                { model
+                    | inputValue = ""
+                    , todos = nextTodos
+                    , idState = newTodoId
+                }
 
             else
                 model
@@ -128,10 +104,9 @@ update msg model =
                     Stuff.flatId t.id /= Stuff.flatId id
 
                 nextTodos =
-                    List.filter isGood (todosL.get model)
+                    List.filter isGood model.todos
             in
-            model
-                |> todosL.set nextTodos
+            { model | todos = nextTodos }
 
         ToggleTodo cid checked ->
             let
@@ -145,8 +120,7 @@ update msg model =
                 nextTodos =
                     List.map map model.todos
             in
-            model
-                |> todosL.set nextTodos
+            { model | todos = nextTodos }
 
         ToggleAllTodos ->
             let
@@ -163,12 +137,10 @@ update msg model =
                     else
                         List.map (mapTodo True) model.todos
             in
-            model
-                |> todosL.set nextTodos
+            { model | todos = nextTodos }
 
         SetFilter filter ->
-            model
-                |> filterL.set filter
+            { model | filter = filter }
 
         NoOp ->
             model
@@ -220,29 +192,27 @@ filterElement current =
     div [] (List.map map values)
 
 
+filterTodos : Filter -> List Todo -> List Todo
+filterTodos filter todos =
+    let
+        predicate todo =
+            case filter of
+                All ->
+                    True
+
+                Done ->
+                    todo.checked
+
+                Remaining ->
+                    not todo.checked
+    in
+    List.filter predicate todos
+
+
 view : Model -> Html Msg
 view m =
-    let
-        todosFilter : Filter -> List Todo -> List Todo
-        todosFilter filter todos =
-            let
-                predicate todo =
-                    case filter of
-                        All ->
-                            True
-
-                        Done ->
-                            todo.checked
-
-                        Remaining ->
-                            not todo.checked
-            in
-            List.filter predicate todos
-
-        --
-    in
     div []
-        [ div [] (List.map todoElement << todosFilter m.filter <| m.todos)
+        [ div [] (List.map todoElement << filterTodos m.filter <| m.todos)
         , div []
             [ input
                 [ Attrs.value m.inputValue
