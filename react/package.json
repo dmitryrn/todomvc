@@ -14,15 +14,15 @@
     "react-dom": "@hot-loader/react-dom"
   },
   "devDependencies": {
-    "@babel/core": "^7.7.7",
     "@babel/preset-react": "^7.8.3",
-    "@types/node": "^13.1.2",
+    "@babel/core": "^7.8.3",
+    "@types/node": "^13.1.7",
     "@types/react": "^16.9.17",
     "@types/react-dom": "^16.9.4",
     "parcel-bundler": "^1.12.4",
     "react-hot-loader": "^4.12.18",
     "rimraf": "^3.0.0",
-    "typescript": "^3.7.4"
+    "typescript": "^3.7.5"
   },
   "dependencies": {
     "@hot-loader/react-dom": "^16.11.0",
