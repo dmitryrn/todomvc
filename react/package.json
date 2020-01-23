@@ -20,7 +20,7 @@
     "@types/react": "^16.9.17",
     "@types/react-dom": "^16.9.4",
     "parcel-bundler": "^1.12.4",
-    "react-hot-loader": "^4.12.18",
+    "react-hot-loader": "^4.12.19",
     "rimraf": "^3.0.0",
     "typescript": "^3.7.5"
   },
